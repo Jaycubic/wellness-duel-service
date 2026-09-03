@@ -190,7 +190,7 @@ pub async fn submit_checkin(
     while let Some(mut field) = payload.try_next().await? {
         let field_name = field
             .content_disposition()
-            .and_then(|cd| cd.get_name())
+            .get_name()
             .unwrap_or("")
             .to_string();
 
