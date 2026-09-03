@@ -302,12 +302,17 @@
   var latestState = null;
   var celebratedFor = null; // room code we've already played the fanfare for
 
-  function apiUrl(path){ return path; } // same-origin; server also serves this file
+  var DEFAULT_SERVER_HOST = "192.168.8.10:8090";
+  var isSameOrigin = (location.protocol === "http:" || location.protocol === "https:") && Boolean(location.host);
+  var API_BASE = isSameOrigin ? "" : ("http://" + DEFAULT_SERVER_HOST);
+
+  function apiUrl(path){ return API_BASE + path; }
 
   function connectWs(roomCode){
     if(ws){ try{ ws.close(); }catch(e){ /* already closing */ } }
-    var proto = location.protocol === "https:" ? "wss:" : "ws:";
-    ws = new WebSocket(proto + "//" + location.host + "/ws/" + roomCode);
+    var host = isSameOrigin ? location.host : DEFAULT_SERVER_HOST;
+    var proto = (isSameOrigin && location.protocol === "https:") ? "wss:" : "ws:";
+    ws = new WebSocket(proto + "//" + host + "/ws/" + roomCode);
     ws.onmessage = function(evt){
       try{
         var state = JSON.parse(evt.data);
