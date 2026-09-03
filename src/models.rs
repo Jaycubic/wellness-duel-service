@@ -14,6 +14,7 @@ pub struct RoomRow {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct PlayerRow {
     pub id: Uuid,
     pub room_id: Uuid,

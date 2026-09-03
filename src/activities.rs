@@ -1,6 +1,7 @@
 /// The server is the single source of truth for points. The client mirrors
 /// this list for its activity picker, but a client can never award itself
 /// points directly — every checkin is recomputed here from scratch.
+#[allow(dead_code)]
 pub struct Activity {
     pub key: &'static str,
     pub name: &'static str,
