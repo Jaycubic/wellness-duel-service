@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<title>Step & Share — Wellness Streak Duel</title>
+<style>
+  :root{
+    --bg: #0F2A2E;
+    --bg-2: #0C2226;
+    --surface: #163B3F;
+    --surface-border: #24545A;
+    --ember: #FF8A3D;
+    --ember-soft: #FFD9AE;
+    --mint: #6FD6C4;
+    --mint-soft: #C7F0E7;
+    --text: #F4FBFA;
+    --text-muted: #9FC2C0;
+    --radius: 20px;
+    --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(120% 100% at 50% -10%, var(--bg-2), var(--bg) 60%);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    line-height: 1.45;
+  }
+
+  button, input, select{ font-family: inherit; color: inherit; }
+  button{ cursor:pointer; }
+  :focus-visible{ outline: 2px solid var(--mint); outline-offset: 2px; }
+
+  .app{ max-width: 640px; margin: 0 auto; padding: 28px 20px 60px; }
+  .app-header{ text-align: center; margin-bottom: 28px; }
+  .app-header h1{
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(28px, 6vw, 38px); margin: 0 0 6px;
+  }
+  .tagline{ color: var(--text-muted); margin: 0; font-size: 15px; }
+
+  .screen{ display: none; }
+  body[data-state="setup"] #screen-setup{ display: block; }
+  body[data-state="duel"] #screen-duel{ display: block; }
+
+  .card{
+    background: var(--surface); border: 1px solid var(--surface-border);
+    border-radius: var(--radius); padding: 24px;
+  }
+
+  .field{ margin-bottom: 16px; }
+  .field label{ display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+  .field input{
+    width: 100%; padding: 12px 14px; background: var(--bg-2);
+    border: 1px solid var(--surface-border); border-radius: 12px; font-size: 16px;
+  }
+
+  .btn{
+    border: none; border-radius: 14px; padding: 13px 20px; font-size: 15px; font-weight: 600;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn:disabled{ opacity: 0.4; cursor: default; transform:none; }
+  .btn-primary{ background: var(--ember); color: #2B1300; width: 100%; }
+  .btn-share{ background: var(--mint); color: #062521; width: 100%; }
+  .btn-ghost{ background: transparent; border: 1px solid var(--surface-border); color: var(--text-muted); }
+  .btn-small{ padding: 8px 12px; font-size: 13px; }
+  .link-btn{ background: none; border: none; color: var(--mint-soft); text-decoration: underline; font-size: 14px; padding: 6px 0; }
+
+  .setup-actions{ display:flex; flex-direction:column; gap: 10px; margin: 4px 0 18px; }
+  .setup-links{ text-align:center; margin-top: 14px; }
+  .divider{ text-align:center; color: var(--text-muted); font-size: 12px; margin: 18px 0 12px; }
+
+  .day-row{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 6px; }
+  #day-label{ font-weight: 600; }
+  .room-code-row{ text-align:center; color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
+  .room-code-row strong{ color: var(--mint-soft); letter-spacing: 1px; }
+
+  .dot-row{ display:flex; gap: 6px; }
+  .dot{ width: 9px; height: 9px; border-radius: 50%; background: var(--surface-border); }
+  .dot.filled{ background: var(--ember); }
+  .dot.current{ outline: 2px solid var(--text-muted); outline-offset: 2px; }
+
+  #status-banner{
+    text-align:center; background: var(--mint); color:#062521;
+    border-radius: 14px; padding: 10px 16px; font-size: 14px; font-weight:600; margin-bottom: 16px;
+  }
+
+  .leaderboard-card{ padding: 16px 20px; margin-bottom: 16px; }
+  .rank-row{ font-size: 14px; padding: 4px 0; }
+  .rank-row.me{ color: var(--ember-soft); font-weight: 600; }
+
+  .my-card{ text-align:center; padding: 22px 18px; margin-bottom: 18px; }
+  .ember-canvas{ display:block; margin: 0 auto 8px; }
+  .my-card h3{ margin: 0 0 2px; font-size: 17px; }
+  .streak-label{ margin: 0 0 10px; font-size: 13px; color: var(--text-muted); }
+  .streak-label span{ color: var(--ember); font-weight: 700; }
+
+  .progress-track{ background: var(--bg-2); border-radius: 999px; height: 8px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill{ height: 100%; width: 0%; background: var(--ember); border-radius: 999px; transition: width 0.3s ease; }
+  .points-label{ margin: 0 0 12px; font-size: 13px; color: var(--text-muted); }
+
+  .activity-select{
+    width: 100%; padding: 10px 12px; background: var(--bg-2);
+    border: 1px solid var(--surface-border); border-radius: 12px; font-size: 14px; margin-bottom: 10px;
+  }
+
+  .photo-row{ display:flex; align-items:center; justify-content:center; gap: 8px; margin-bottom: 10px; }
+  .photo-thumb{ width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid var(--surface-border); }
+
+  .status{ font-size: 13px; color: var(--text-muted); min-height: 18px; margin-bottom: 10px; }
+  .btn-row{ display:flex; gap: 8px; }
+  .my-card .btn{ flex: 1; padding: 10px 8px; font-size: 13px; }
+
+  #particle-canvas{ position: fixed; inset: 0; pointer-events: none; z-index: 40; }
+
+  dialog{
+    max-width: 480px; width: calc(100% - 40px); background: var(--surface); color: var(--text);
+    border: 1px solid var(--surface-border); border-radius: var(--radius); padding: 26px;
+  }
+  dialog::backdrop{ background: rgba(6, 16, 17, 0.72); }
+  dialog h2{ font-family: var(--font-display); margin-top: 0; }
+  dialog h3{ font-size: 14px; color: var(--ember-soft); margin: 16px 0 4px; }
+  dialog p{ margin: 0 0 4px; font-size: 14px; color: var(--text-muted); }
+  dialog .btn{ margin-top: 12px; width: 100%; }
+
+  #toast{
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+    background: var(--mint); color: #062521; padding: 12px 18px; border-radius: 12px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease; z-index: 50;
+  }
+  #toast.show{ opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body data-state="setup">
+
+  <div class="app">
+    <header class="app-header">
+      <h1>Step &amp; Share</h1>
+      <p class="tagline">A live wellness streak duel</p>
+    </header>
+
+    <main>
+      <section id="screen-setup" class="screen">
+        <div class="card">
+          <div class="field">
+            <label for="name-input">Your name</label>
+            <input id="name-input" type="text" maxlength="18" placeholder="e.g. Arjun" autocomplete="off" />
+          </div>
+          <div class="setup-actions">
+            <button type="button" class="btn btn-primary" id="create-room-btn">Create a new room</button>
+          </div>
+          <div class="divider">— or —</div>
+          <div class="field">
+            <label for="join-code-input">Join with a code</label>
+            <input id="join-code-input" type="text" maxlength="6" placeholder="e.g. AB3XZ9" style="text-transform:uppercase" autocomplete="off" />
+          </div>
+          <button type="button" class="btn btn-share" id="join-room-btn">Join room</button>
+          <div class="setup-links">
+            <button type="button" class="link-btn" id="rulebook-open-1">How to play</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-duel" class="screen">
+        <div class="day-row">
+          <span id="day-label">Day 1 of 7</span>
+          <div id="day-dots" class="dot-row" aria-hidden="true"></div>
+        </div>
+        <div class="room-code-row">Room code: <strong id="room-code-display">——</strong></div>
+
+        <div id="status-banner" hidden></div>
+
+        <div class="card leaderboard-card">
+          <div id="leaderboard"></div>
+        </div>
+
+        <div class="card my-card">
+          <canvas class="ember-canvas" id="ember-me"></canvas>
+          <h3 id="name-me">You</h3>
+          <p class="streak-label">Streak: <span id="streak-me">0</span> 🔥</p>
+          <div class="progress-track"><div class="progress-fill" id="progress-me"></div></div>
+          <p class="points-label" id="points-me">0 pts</p>
+
+          <select class="activity-select" id="activity-select-me">
+            <option value="">Choose an activity…</option>
+          </select>
+
+          <div class="photo-row">
+            <button type="button" class="btn btn-ghost btn-small" id="photo-btn-me">Add proof photo</button>
+            <img class="photo-thumb" id="photo-thumb-me" alt="Proof photo" hidden />
+          </div>
+          <input type="file" accept="image/*" capture="environment" id="photo-input-me" hidden />
+
+          <p class="status" id="status-me" aria-live="polite">Waiting for check-in…</p>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="done-btn-me" disabled>Mark done</button>
+            <button class="btn btn-ghost" id="skip-btn-me">Skip today</button>
+          </div>
+        </div>
+
+        <div class="setup-actions">
+          <button class="btn btn-share" id="share-room-btn">Share room code</button>
+        </div>
+
+        <div class="setup-links">
+          <button type="button" class="link-btn" id="rulebook-open-2">How to play</button>
+          &nbsp;·&nbsp;
+          <button type="button" class="link-btn" id="leave-room-btn">Leave room</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <canvas id="particle-canvas"></canvas>
+
+  <dialog id="rulebook-dialog">
+    <h2>Rule Book</h2>
+    <p>Step &amp; Share is a live wellness duel. Everyone in a room shares the same real-time board, hosted on a server that keeps score honestly.</p>
+
+    <h3>Players</h3>
+    <p>Up to a handful of friends per room, each on their own device, connected over the same network.</p>
+
+    <h3>Goals</h3>
+    <p>Reach the room's point target, or have the most points when the 7-day week ends.</p>
+
+    <h3>Rules</h3>
+    <p>Each real calendar day, pick one activity and mark it Done (earns points, streak +1) or Skip (streak resets). Repeating yesterday's activity earns reduced points, so mixing it up pays off. A proof photo is optional. The server — not your device — decides your points, so nobody can fake a score.</p>
+
+    <h3>Space</h3>
+    <p>Physical space is wherever you do the activity. Digital space is this shared room, live for everyone connected.</p>
+
+    <h3>Time</h3>
+    <p>One round equals one real day, tied to the room's creation date — not a button you can click through.</p>
+
+    <h3>Resources</h3>
+    <p>A fixed set of 10 emoji represents every activity, plus fire, trophy, and celebration.</p>
+
+    <h3>Conflict</h3>
+    <p>Everyone races toward the same target on the same live board — a real duel, not a snapshot.</p>
+
+    <button class="btn btn-ghost" id="rulebook-close">Close</button>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var EMBER_SIZE = 96;
+  var ACCENT_ME = "#FF8A3D";
+
+  // Mirrors the server's activity list for the picker UI only. Points are
+  // never trusted from here — the server (src/activities.rs) recomputes
+  // every checkin from scratch.
+  var ACTIVITIES = [
+    { key: "squats",  name: "10 Squats",              emoji: "💪", points: 3 },
+    { key: "walk",    name: "5-Minute Walk",           emoji: "🚶", points: 2 },
+    { key: "stretch", name: "2-Minute Stretch",        emoji: "🧘", points: 2 },
+    { key: "water",   name: "Drink a Glass of Water",  emoji: "💧", points: 1 },
+    { key: "dance",   name: "Dance to One Song",       emoji: "💃", points: 3 },
+    { key: "breathe", name: "10 Deep Breaths",         emoji: "❤️", points: 1 },
+    { key: "rolls",   name: "Shoulder & Neck Rolls",   emoji: "⚡", points: 1 }
+  ];
+  function activityByKey(key){ for(var i=0;i<ACTIVITIES.length;i++){ if(ACTIVITIES[i].key===key) return ACTIVITIES[i]; } return null; }
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- device identity (not game state — just "who is this browser") ---------- */
+
+  function fallbackUuid(){
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
+      var r = Math.random()*16|0, v = c === "x" ? r : (r&0x3|0x8);
+      return v.toString(16);
+    });
+  }
+  function getDeviceToken(){
+    var t = localStorage.getItem("wsd_device_token");
+    if(!t){
+      t = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : fallbackUuid();
+      localStorage.setItem("wsd_device_token", t);
+    }
+    return t;
+  }
+
+  /* ---------- networking state ---------- */
+
+  var ws = null;
+  var currentRoomCode = null;
+  var myPlayerId = null;
+  var latestState = null;
+  var celebratedFor = null; // room code we've already played the fanfare for
+
+  function apiUrl(path){ return path; } // same-origin; server also serves this file
+
+  function connectWs(roomCode){
+    if(ws){ try{ ws.close(); }catch(e){ /* already closing */ } }
+    var proto = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(proto + "//" + location.host + "/ws/" + roomCode);
+    ws.onmessage = function(evt){
+      try{
+        var state = JSON.parse(evt.data);
+        latestState = state;
+        renderDuel();
+      }catch(e){ /* ignore malformed frame */ }
+    };
+    ws.onclose = function(){
+      // Brief network blip on campus WiFi shouldn't end the session —
+      // try again in a few seconds if we're still meant to be in a room.
+      setTimeout(function(){ if(currentRoomCode === roomCode) connectWs(roomCode); }, 3000);
+    };
+  }
+
+  async function createRoom(){
+    try{
+      var res = await fetch(apiUrl("/api/rooms"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      if(!res.ok) throw new Error("create failed");
+      var state = await res.json();
+      await joinExistingRoom(state.room.code);
+    }catch(e){
+      showToast("Could not reach the server. Check you are on the FLAME network.");
+    }
+  }
+
+  async function joinExistingRoom(codeRaw){
+    var code = (codeRaw || "").trim().toUpperCase();
+    if(!code){ showToast("Enter a room code first."); return; }
+    var name = document.getElementById("name-input").value.trim() || "Player";
+
+    try{
+      var res = await fetch(apiUrl("/api/rooms/" + code + "/join"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ device_token: getDeviceToken(), name: name })
+      });
+      if(!res.ok){
+        var err = await res.json().catch(function(){ return { error: "Could not join that room." }; });
+        showToast(err.error || "Could not join that room.");
+        return;
+      }
+      var data = await res.json();
+      myPlayerId = data.player_id;
+      currentRoomCode = code;
+      latestState = data.state;
+      celebratedFor = null;
+
+      localStorage.setItem("wsd_last_name", name);
+
+      document.getElementById("room-code-display").textContent = currentRoomCode;
+      connectWs(currentRoomCode);
+      setScreen("duel");
+      renderDuel();
+    }catch(e){
+      showToast("Could not reach the server. Check you are on the FLAME network.");
+    }
+  }
+
+  async function submitCheckin(opts){
+    var form = new FormData();
+    form.append("device_token", getDeviceToken());
+    if(opts.skip){
+      form.append("skip", "true");
+    } else {
+      form.append("activity_key", opts.activityKey);
+    }
+    if(opts.photoFile){ form.append("photo", opts.photoFile, "photo.jpg"); }
+
+    try{
+      var res = await fetch(apiUrl("/api/rooms/" + currentRoomCode + "/checkin"), { method: "POST", body: form });
+      if(!res.ok){
+        var err = await res.json().catch(function(){ return { error: "Something went wrong." }; });
+        showToast(err.error || "Something went wrong.");
+        return false;
+      }
+      latestState = await res.json();
+      renderDuel();
+      return true;
+    }catch(e){
+      showToast("Could not reach the server. Check you are on the FLAME network.");
+      return false;
+    }
+  }
+
+  function leaveRoom(){
+    if(!window.confirm("Leave this room? You can rejoin later with the same code from this device.")) return;
+    if(ws){ try{ ws.close(); }catch(e){ /* already closing */ } }
+    ws = null;
+    currentRoomCode = null;
+    myPlayerId = null;
+    latestState = null;
+    setScreen("setup");
+  }
+
+  function shareRoomCode(){
+    var url = location.origin + location.pathname + "?code=" + currentRoomCode;
+    var text = "Join my Wellness Streak Duel! Code: " + currentRoomCode + "\n" + url;
+    if(navigator.share){
+      navigator.share({ title: "Wellness Streak Duel", text: text }).catch(function(){ /* user cancelled */ });
+    } else {
+      copyToClipboard(text).then(function(){ showToast("Copied! Share it with your friends."); });
+    }
+  }
+
+  /* ---------- screen management ---------- */
+
+  function setScreen(name){ document.body.dataset.state = name; }
+
+  /* ---------- dot rows ---------- */
+
+  function buildDots(container, total, filledCount, currentIndex){
+    container.innerHTML = "";
+    for(var i=0; i<total; i++){
+      var d = document.createElement("span");
+      d.className = "dot";
+      if(i < filledCount) d.classList.add("filled");
+      if(typeof currentIndex === "number" && i === currentIndex) d.classList.add("current");
+      container.appendChild(d);
+    }
+  }
+
+  /* ---------- color helpers ---------- */
+
+  function hexToRgb(hex){
+    var h = hex.replace("#", "");
+    if(h.length === 3) h = h.split("").map(function(c){ return c+c; }).join("");
+    var num = parseInt(h, 16);
+    return [(num>>16)&255, (num>>8)&255, num&255];
+  }
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function lerpColor(c1, c2, t){
+    t = Math.max(0, Math.min(1, t));
+    var a = hexToRgb(c1), b = hexToRgb(c2);
+    return "rgb(" + Math.round(lerp(a[0],b[0],t)) + ", " + Math.round(lerp(a[1],b[1],t)) + ", " + Math.round(lerp(a[2],b[2],t)) + ")";
+  }
+
+  /* ---------- ember canvas ---------- */
+
+  var emberCtxMe = null;
+
+  function setupEmberCanvas(canvas){
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = EMBER_SIZE * dpr;
+    canvas.height = EMBER_SIZE * dpr;
+    canvas.style.width = EMBER_SIZE + "px";
+    canvas.style.height = EMBER_SIZE + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  function drawEmber(ctx, displayStreak, targetScore, accentHex){
+    var size = EMBER_SIZE, cx = size/2, cy = size*0.55;
+    ctx.clearRect(0, 0, size, size);
+    var t = reduceMotion ? 0 : performance.now()/450;
+    var flicker = reduceMotion ? 1 : (1 + Math.sin(t + displayStreak) * 0.05);
+    var intensity = Math.max(0, Math.min(1, displayStreak / Math.max(1, targetScore)));
+    var outerR = (18 + displayStreak*7) * flicker;
+    var mid = lerpColor("#4B5A58", accentHex, intensity);
+    var core = lerpColor(accentHex, "#FFF4D6", Math.min(1, intensity*1.3));
+    var grad = ctx.createRadialGradient(cx, cy, Math.max(1, outerR*0.05), cx, cy, outerR);
+    grad.addColorStop(0, core); grad.addColorStop(0.45, mid); grad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = lerpColor("#2B3A39", accentHex, Math.max(0.15, intensity));
+    ctx.arc(cx, cy, 9, 0, Math.PI*2); ctx.fill();
+  }
+
+  /* ---------- particle celebration system ---------- */
+
+  var particleCanvas = document.getElementById("particle-canvas");
+  var particleCtx = null;
+  var particles = [];
+
+  function resizeParticleCanvas(){
+    var dpr = window.devicePixelRatio || 1;
+    particleCanvas.width = window.innerWidth * dpr;
+    particleCanvas.height = window.innerHeight * dpr;
+    particleCtx = particleCanvas.getContext("2d");
+    particleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawnParticleBurst(origin, glyphs, count){
+    var n = reduceMotion ? Math.max(3, Math.ceil(count/4)) : count;
+    for(var i=0; i<n; i++){
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 110 + Math.random()*170;
+      particles.push({
+        x: origin.x, y: origin.y,
+        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 90,
+        rot: Math.random()*Math.PI*2, vrot: (Math.random()-0.5)*6,
+        glyph: glyphs[Math.floor(Math.random()*glyphs.length)],
+        life: reduceMotion ? 0.6 : 1, size: 16 + Math.random()*14
+      });
+    }
+  }
+
+  function updateParticles(dt){
+    var g = 480;
+    for(var i=particles.length-1; i>=0; i--){
+      var p = particles[i];
+      p.vy += g*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.rot += p.vrot*dt; p.life -= dt*0.7;
+      if(p.life <= 0 || p.y > window.innerHeight + 60) particles.splice(i,1);
+    }
+  }
+
+  function drawParticles(){
+    if(!particleCtx) return;
+    particleCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    for(var i=0; i<particles.length; i++){
+      var p = particles[i];
+      particleCtx.save();
+      particleCtx.globalAlpha = Math.max(0, p.life);
+      particleCtx.translate(p.x, p.y); particleCtx.rotate(p.rot);
+      particleCtx.font = p.size + "px sans-serif";
+      particleCtx.textAlign = "center"; particleCtx.textBaseline = "middle";
+      particleCtx.fillText(p.glyph, 0, 0);
+      particleCtx.restore();
+    }
+  }
+
+  function getMyCardAnchor(){
+    var card = document.querySelector(".my-card");
+    var r = card.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height*0.3 };
+  }
+
+  /* ---------- procedural audio ---------- */
+
+  var audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(opts){
+    var ctx = getAudioCtx();
+    if(!ctx) return;
+    var freq = opts.freq || 440, duration = opts.duration || 0.18, type = opts.type || "sine";
+    var startTime = opts.startTime || 0, gainAmt = opts.gain || 0.18, glideTo = opts.glideTo || null;
+    var osc = ctx.createOscillator(); var g = ctx.createGain();
+    osc.type = type;
+    var t0 = ctx.currentTime + startTime;
+    osc.frequency.setValueAtTime(freq, t0);
+    if(glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0+duration);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gainAmt, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+duration+0.03);
+  }
+  function playChime(){ playTone({freq:660,duration:0.12,type:"sine"}); playTone({freq:880,duration:0.18,type:"sine",startTime:0.1}); }
+  function playThud(){ playTone({freq:180,duration:0.32,type:"triangle",glideTo:70,gain:0.2}); }
+  function playFanfare(){
+    var notes = [523.25, 659.25, 783.99, 1046.5];
+    for(var i=0;i<notes.length;i++){ playTone({freq:notes[i],duration:0.26,type:"sine",startTime:i*0.12,gain:0.2}); }
+  }
+  function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+  /* ---------- photo capture + compression ---------- */
+
+  function compressImage(file, maxDim, quality){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){
+        var img = new Image();
+        img.onload = function(){
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width*scale));
+          var h = Math.max(1, Math.round(img.height*scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob(function(blob){
+            if(blob) resolve(blob); else reject(new Error("could not encode image"));
+          }, "image/jpeg", quality);
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ---------- clipboard + toast ---------- */
+
+  function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).catch(function(){ legacyCopy(text); });
+    }
+    legacyCopy(text);
+    return Promise.resolve();
+  }
+  function legacyCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(e){ /* clipboard unavailable */ }
+    document.body.removeChild(ta);
+  }
+  var toastTimer = null;
+  function showToast(msg){
+    var el = document.getElementById("toast");
+    el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 2600);
+  }
+
+  /* ---------- rendering ---------- */
+
+  var pendingPhotoBlob = null;
+
+  function buildActivityOptions(select){
+    ACTIVITIES.forEach(function(a){
+      var opt = document.createElement("option");
+      opt.value = a.key;
+      opt.textContent = a.emoji + " " + a.name + " — " + a.points + (a.points === 1 ? " pt" : " pts");
+      select.appendChild(opt);
+    });
+  }
+
+  function findMe(){
+    if(!latestState || !myPlayerId) return null;
+    for(var i=0;i<latestState.players.length;i++){ if(latestState.players[i].id === myPlayerId) return latestState.players[i]; }
+    return null;
+  }
+
+  function todayEntryFor(player, currentDay){
+    if(!player) return null;
+    for(var i=0;i<player.history.length;i++){ if(player.history[i].day === currentDay) return player.history[i]; }
+    return null;
+  }
+
+  function renderLeaderboard(){
+    var container = document.getElementById("leaderboard");
+    container.innerHTML = "";
+    var players = latestState.players;
+    var currentDay = latestState.room.current_day;
+    if(!players.length) return;
+    var topScore = players[0].total_points; // server already sorts desc
+    var tie = players.filter(function(p){ return p.total_points === topScore; }).length > 1;
+
+    players.forEach(function(p, idx){
+      var row = document.createElement("div");
+      row.className = "rank-row" + (p.id === myPlayerId ? " me" : "");
+      var medal = (p.total_points === topScore && !tie) ? "🏆 " : "";
+      var youTag = p.id === myPlayerId ? " (you)" : "";
+      var checkedToday = !!todayEntryFor(p, currentDay);
+      var mark = checkedToday ? " · done" : "";
+      row.textContent = medal + (idx+1) + ". " + p.name + youTag + " — " + p.total_points + " pts, " + p.streak + "🔥" + mark;
+      container.appendChild(row);
+    });
+  }
+
+  function renderStatusBanner(){
+    var el = document.getElementById("status-banner");
+    var room = latestState.room;
+    var players = latestState.players;
+    var winner = players.find(function(p){ return p.total_points >= room.win_target; });
+
+    if(winner){
+      el.hidden = false;
+      el.textContent = "🏆 " + winner.name + " reached the " + room.win_target + "-point target!";
+      if(celebratedFor !== currentRoomCode + ":win"){
+        celebratedFor = currentRoomCode + ":win";
+        playFanfare();
+        spawnParticleBurst({ x: window.innerWidth/2, y: window.innerHeight*0.3 }, ["🎉","🏆","🔥"], 24);
+      }
+    } else if(room.current_day > room.max_days){
+      el.hidden = false;
+      el.textContent = "🎉 Week complete! Check the leaderboard for the final standings.";
+      if(celebratedFor !== currentRoomCode + ":week"){
+        celebratedFor = currentRoomCode + ":week";
+        playFanfare();
+      }
+    } else {
+      el.hidden = true;
+    }
+  }
+
+  function renderMyCard(){
+    var me = findMe();
+    if(!me) return;
+    var room = latestState.room;
+
+    document.getElementById("name-me").textContent = me.name;
+    document.getElementById("streak-me").textContent = me.streak;
+    document.getElementById("points-me").textContent = me.total_points + " pts";
+    document.getElementById("progress-me").style.width = Math.min(100, (me.total_points/room.win_target)*100) + "%";
+
+    var doneBtn = document.getElementById("done-btn-me");
+    var skipBtn = document.getElementById("skip-btn-me");
+    var select = document.getElementById("activity-select-me");
+    var statusEl = document.getElementById("status-me");
+    var photoBtn = document.getElementById("photo-btn-me");
+    var photoThumb = document.getElementById("photo-thumb-me");
+
+    var today = todayEntryFor(me, room.current_day);
+    var weekOver = room.current_day > room.max_days;
+
+    if(today){
+      if(today.skipped){
+        statusEl.textContent = "Skipped today";
+      } else {
+        var act = activityByKey(today.activity_key);
+        statusEl.textContent = "Done — " + (act ? act.emoji + " " + act.name : "") + " (" + today.points + (today.points === 1 ? " pt)" : " pts)");
+      }
+      doneBtn.disabled = true; skipBtn.disabled = true; select.disabled = true; photoBtn.disabled = true;
+      if(today.photo_url){ photoThumb.src = today.photo_url; photoThumb.hidden = false; } else { photoThumb.hidden = true; }
+    } else if(weekOver){
+      statusEl.textContent = "This week is complete.";
+      doneBtn.disabled = true; skipBtn.disabled = true; select.disabled = true; photoBtn.disabled = true;
+      photoThumb.hidden = true;
+    } else {
+      statusEl.textContent = "Waiting for check-in…";
+      doneBtn.disabled = !select.value;
+      skipBtn.disabled = false; select.disabled = false; photoBtn.disabled = false;
+      photoThumb.hidden = true;
+    }
+  }
+
+  function renderDuel(){
+    if(!latestState) return;
+    var room = latestState.room;
+    document.getElementById("day-label").textContent = "Day " + Math.min(room.current_day, room.max_days) + " of " + room.max_days;
+    buildDots(document.getElementById("day-dots"), room.max_days, Math.max(0, room.current_day-1), room.current_day-1);
+    document.getElementById("room-code-display").textContent = room.code;
+
+    renderStatusBanner();
+    renderLeaderboard();
+    renderMyCard();
+  }
+
+  /* ---------- game actions ---------- */
+
+  async function onMarkDone(){
+    var select = document.getElementById("activity-select-me");
+    var key = select.value;
+    if(!key){ showToast("Pick an activity first."); return; }
+
+    var doneBtn = document.getElementById("done-btn-me");
+    var skipBtn = document.getElementById("skip-btn-me");
+    doneBtn.disabled = true; skipBtn.disabled = true;
+
+    var ok = await submitCheckin({ activityKey: key, photoFile: pendingPhotoBlob });
+    pendingPhotoBlob = null;
+
+    if(ok){
+      var activity = activityByKey(key);
+      playChime(); vibrate(15);
+      spawnParticleBurst(getMyCardAnchor(), [activity ? activity.emoji : "🔥", "🎉", "❤️"], 16);
+    } else {
+      doneBtn.disabled = !select.value; skipBtn.disabled = false;
+    }
+  }
+
+  async function onMarkSkip(){
+    var doneBtn = document.getElementById("done-btn-me");
+    var skipBtn = document.getElementById("skip-btn-me");
+    doneBtn.disabled = true; skipBtn.disabled = true;
+
+    var me = findMe();
+    var brokeStreak = me && me.streak > 0;
+    var ok = await submitCheckin({ skip: true });
+    pendingPhotoBlob = null;
+
+    if(ok){ if(brokeStreak) playThud(); }
+    else {
+      var select = document.getElementById("activity-select-me");
+      doneBtn.disabled = !select.value; skipBtn.disabled = false;
+    }
+  }
+
+  /* ---------- central animation loop ---------- */
+
+  var lastTime = null;
+  var displayStreakMe = 0;
+
+  function tick(now){
+    if(lastTime === null) lastTime = now;
+    var dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    var me = findMe();
+    var targetStreak = me ? me.streak : 0;
+    var winTarget = latestState ? latestState.room.win_target : 15;
+    displayStreakMe += (targetStreak - displayStreakMe) * Math.min(1, dt*4);
+    if(Math.abs(displayStreakMe - targetStreak) < 0.01) displayStreakMe = targetStreak;
+    if(emberCtxMe) drawEmber(emberCtxMe, displayStreakMe, winTarget, ACCENT_ME);
+
+    updateParticles(dt);
+    drawParticles();
+
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- init ---------- */
+
+  function bindEvents(){
+    document.getElementById("create-room-btn").addEventListener("click", createRoom);
+    document.getElementById("join-room-btn").addEventListener("click", function(){
+      joinExistingRoom(document.getElementById("join-code-input").value);
+    });
+
+    document.getElementById("done-btn-me").addEventListener("click", onMarkDone);
+    document.getElementById("skip-btn-me").addEventListener("click", onMarkSkip);
+    document.getElementById("activity-select-me").addEventListener("change", function(){
+      var me = findMe();
+      var today = me ? todayEntryFor(me, latestState.room.current_day) : null;
+      if(!today){ document.getElementById("done-btn-me").disabled = !this.value; }
+    });
+
+    document.getElementById("photo-btn-me").addEventListener("click", function(){
+      document.getElementById("photo-input-me").click();
+    });
+    document.getElementById("photo-input-me").addEventListener("change", function(e){
+      var file = e.target.files[0];
+      if(!file) return;
+      compressImage(file, 480, 0.7).then(function(blob){
+        pendingPhotoBlob = blob;
+        var thumb = document.getElementById("photo-thumb-me");
+        thumb.src = URL.createObjectURL(blob);
+        thumb.hidden = false;
+      }).catch(function(){ showToast("Could not process that photo."); });
+    });
+
+    document.getElementById("share-room-btn").addEventListener("click", shareRoomCode);
+    document.getElementById("leave-room-btn").addEventListener("click", leaveRoom);
+
+    var rulebookDialog = document.getElementById("rulebook-dialog");
+    document.getElementById("rulebook-open-1").addEventListener("click", function(){ rulebookDialog.showModal(); });
+    document.getElementById("rulebook-open-2").addEventListener("click", function(){ rulebookDialog.showModal(); });
+    document.getElementById("rulebook-close").addEventListener("click", function(){ rulebookDialog.close(); });
+
+    window.addEventListener("resize", resizeParticleCanvas);
+  }
+
+  function init(){
+    emberCtxMe = setupEmberCanvas(document.getElementById("ember-me"));
+    resizeParticleCanvas();
+    buildActivityOptions(document.getElementById("activity-select-me"));
+    bindEvents();
+
+    var params = new URLSearchParams(location.search);
+    var codeFromUrl = params.get("code");
+    if(codeFromUrl) document.getElementById("join-code-input").value = codeFromUrl.toUpperCase();
+
+    var lastName = localStorage.getItem("wsd_last_name");
+    if(lastName) document.getElementById("name-input").value = lastName;
+
+    setScreen("setup");
+    requestAnimationFrame(tick);
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

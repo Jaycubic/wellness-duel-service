@@ -1,0 +1,15 @@
+[Unit]
+Description=Wellness Streak Duel backend
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/wellness-duel-service
+EnvironmentFile=/opt/wellness-duel-service/.env
+ExecStart=/opt/wellness-duel-service/target/release/wellness-duel-service
+Restart=on-failure
+RestartSec=3
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
