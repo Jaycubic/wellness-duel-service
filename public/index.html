@@ -735,12 +735,23 @@
   }
 
   function shareRoomCode(){
-    var url = location.origin + location.pathname + "?code=" + currentRoomCode;
-    var text = "Join my Wellness Streak Duel! Code: " + currentRoomCode + "\n" + url;
+    // Use the main URL as requested
+    var url = "http://192.168.8.10:8090/?code=" + currentRoomCode;
+    var text = "Join my Wellness Streak Duel! Room Code: " + currentRoomCode;
+    
     if(navigator.share){
-      navigator.share({ title: "Wellness Streak Duel", text: text }).catch(function(){ /* user cancelled */ });
+      navigator.share({ 
+        title: "Wellness Streak Duel", 
+        text: text,
+        url: url
+      }).catch(function(err){ 
+        // If user cancelled, just ignore. If failed for other reason, fallback to clipboard.
+        if (err.name !== 'AbortError') {
+          copyToClipboard(text + "\n" + url).then(function(){ showToast("Link copied to clipboard!"); });
+        }
+      });
     } else {
-      copyToClipboard(text).then(function(){ showToast("Copied! Share it with your friends."); });
+      copyToClipboard(text + "\n" + url).then(function(){ showToast("Copied! Share it with your friends."); });
     }
   }
 
