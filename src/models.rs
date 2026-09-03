@@ -140,3 +140,41 @@ pub struct SubmitFeedbackReq {
     pub rating: i32,
     pub message: String,
 }
+
+// ---------- Chat / WebSocket ----------
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct ChatMessageRow {
+    pub id: Uuid,
+    pub room_id: Uuid,
+    pub player_id: Uuid,
+    pub sender_name: String,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ChatMessageView {
+    pub id: Uuid,
+    pub player_id: Uuid,
+    pub sender_name: String,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+pub enum WsIncoming {
+    #[serde(rename = "chat")]
+    Chat { device_token: String, message: String },
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
+pub enum WsOutgoing<'a> {
+    #[serde(rename = "state")]
+    State(&'a RoomState),
+    #[serde(rename = "chat")]
+    Chat(&'a ChatMessageView),
+}
+

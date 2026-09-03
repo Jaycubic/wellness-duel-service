@@ -1,4 +1,5 @@
 mod activities;
+mod chat;
 mod db;
 mod error;
 mod feedback;
@@ -54,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
             .route("/api/rooms", web::post().to(rooms::create_room))
             .route("/api/rooms/{code}/join", web::post().to(rooms::join_room))
             .route("/api/rooms/{code}/state", web::get().to(rooms::get_state))
+            .route("/api/rooms/{code}/messages", web::get().to(chat::list_messages))
             .route("/api/rooms/{code}/checkin", web::post().to(rooms::submit_checkin))
             .route("/api/feedback", web::get().to(feedback::list_feedback))
             .route("/api/feedback", web::post().to(feedback::submit_feedback))

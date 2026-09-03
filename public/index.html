@@ -5,34 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="color-scheme" content="dark" />
 <title>Step & Share — Wellness Streak Duel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg: #0F2A2E;
     --bg-2: #0C2226;
-    --surface: #163B3F;
-    --surface-border: #24545A;
+    --surface: rgba(22, 59, 63, 0.6);
+    --surface-border: rgba(111, 214, 196, 0.15);
     --ember: #FF8A3D;
     --ember-soft: #FFD9AE;
     --mint: #6FD6C4;
     --mint-soft: #C7F0E7;
     --text: #F4FBFA;
     --text-muted: #9FC2C0;
-    --radius: 20px;
-    --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --radius: 24px;
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
 
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; }
   body{
-    background: radial-gradient(120% 100% at 50% -10%, var(--bg-2), var(--bg) 60%);
+    background: radial-gradient(120% 120% at 50% -10%, var(--bg-2) 0%, var(--bg) 60%, #061517 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
     color: var(--text);
     font-family: var(--font-body);
     min-height: 100vh;
     line-height: 1.45;
   }
 
-  button, input, select{ font-family: inherit; color: inherit; }
+  @keyframes gradientShift {
+    0% { background-position: 50% 0%; }
+    50% { background-position: 50% 50%; }
+    100% { background-position: 50% 0%; }
+  }
+
+  button, input, select, textarea{ font-family: inherit; color: inherit; }
   button{ cursor:pointer; }
   :focus-visible{ outline: 2px solid var(--mint); outline-offset: 2px; }
 
@@ -49,8 +60,13 @@
   body[data-state="duel"] #screen-duel{ display: block; }
 
   .card{
-    background: var(--surface); border: 1px solid var(--surface-border);
-    border-radius: var(--radius); padding: 24px;
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
   .field{ margin-bottom: 16px; }
@@ -62,29 +78,39 @@
 
   .btn{
     border: none; border-radius: 14px; padding: 13px 20px; font-size: 15px; font-weight: 600;
-    transition: transform 0.12s ease, opacity 0.12s ease;
+    transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
-  .btn:active{ transform: scale(0.97); }
-  .btn:disabled{ opacity: 0.4; cursor: default; transform:none; }
-  .btn-primary{ background: var(--ember); color: #2B1300; width: 100%; }
-  .btn-share{ background: var(--mint); color: #062521; width: 100%; }
-  .btn-ghost{ background: transparent; border: 1px solid var(--surface-border); color: var(--text-muted); }
+  .btn:active{ transform: scale(0.96); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  .btn:disabled{ opacity: 0.5; cursor: default; transform:none; box-shadow:none; }
+  .btn-primary{ background: linear-gradient(135deg, var(--ember) 0%, #FF6B00 100%); color: #2B1300; width: 100%; }
+  .btn-primary:hover:not(:disabled){ box-shadow: 0 0 15px rgba(255,138,61,0.4); }
+  .btn-share{ background: linear-gradient(135deg, var(--mint) 0%, #4FBBAA 100%); color: #062521; width: 100%; }
+  .btn-share:hover:not(:disabled){ box-shadow: 0 0 15px rgba(111,214,196,0.4); }
+  .btn-ghost{ background: transparent; border: 1px solid var(--surface-border); color: var(--text-muted); box-shadow:none; }
+  .btn-ghost:hover:not(:disabled){ background: rgba(255,255,255,0.05); }
   .btn-small{ padding: 8px 12px; font-size: 13px; }
-  .link-btn{ background: none; border: none; color: var(--mint-soft); text-decoration: underline; font-size: 14px; padding: 6px 0; }
+  .link-btn{ background: none; border: none; color: var(--mint-soft); text-decoration: underline; font-size: 14px; padding: 6px 0; box-shadow:none; }
 
   .setup-actions{ display:flex; flex-direction:column; gap: 10px; margin: 4px 0 18px; }
   .setup-links{ text-align:center; margin-top: 14px; }
   .divider{ text-align:center; color: var(--text-muted); font-size: 12px; margin: 18px 0 12px; }
 
   .day-row{ display:flex; align-items:center; justify-content: space-between; margin-bottom: 6px; }
-  #day-label{ font-weight: 600; }
+  #day-label{ font-weight: 600; font-family: var(--font-display); letter-spacing: 0.5px; }
   .room-code-row{ text-align:center; color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
-  .room-code-row strong{ color: var(--mint-soft); letter-spacing: 1px; }
+  .room-code-row strong{ color: var(--mint-soft); letter-spacing: 1.5px; font-family: monospace; font-size: 15px; }
 
-  .dot-row{ display:flex; gap: 6px; }
-  .dot{ width: 9px; height: 9px; border-radius: 50%; background: var(--surface-border); }
-  .dot.filled{ background: var(--ember); }
-  .dot.current{ outline: 2px solid var(--text-muted); outline-offset: 2px; }
+  .dot-row{ display:flex; gap: 8px; align-items: center; }
+  .dot{ width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.3s ease; }
+  .dot.filled{ background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+  .dot.current{ background: var(--mint); outline: 2px solid var(--mint-soft); outline-offset: 2px; box-shadow: 0 0 10px var(--mint); animation: pulse 2s infinite; }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
 
   #status-banner{
     text-align:center; background: var(--mint); color:#062521;
@@ -92,18 +118,37 @@
   }
 
   .leaderboard-card{ padding: 16px 20px; margin-bottom: 16px; }
-  .rank-row{ font-size: 14px; padding: 4px 0; }
-  .rank-row.me{ color: var(--ember-soft); font-weight: 600; }
+  .rank-row{ display: flex; align-items: center; gap: 12px; font-size: 14px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .rank-row:last-child{ border-bottom: none; }
+  .rank-row.me{ background: rgba(255,138,61,0.05); border-radius: 12px; padding: 8px 12px; margin: 0 -12px; border: 1px solid rgba(255,138,61,0.2); }
+  
+  .rank-avatar{ width: 36px; height: 36px; border-radius: 50%; background: var(--surface-border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--mint); font-size: 16px; position: relative; }
+  .rank-row.me .rank-avatar{ background: var(--ember); color: #2B1300; }
+  .rank-details{ flex: 1; }
+  .rank-name{ font-weight: 600; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .rank-name .me-badge{ color: var(--ember-soft); font-size: 12px; }
+  .rank-stats{ font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; }
+  
+  .rank-xp-bar{ height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .rank-xp-fill{ height: 100%; background: var(--mint); border-radius: 4px; }
+  .rank-row.me .rank-xp-fill{ background: var(--ember); }
 
-  .my-card{ text-align:center; padding: 22px 18px; margin-bottom: 18px; }
-  .ember-canvas{ display:block; margin: 0 auto 8px; }
-  .my-card h3{ margin: 0 0 2px; font-size: 17px; }
-  .streak-label{ margin: 0 0 10px; font-size: 13px; color: var(--text-muted); }
-  .streak-label span{ color: var(--ember); font-weight: 700; }
+  .my-card{ text-align:center; padding: 26px 20px; margin-bottom: 18px; position: relative; overflow: hidden; }
+  .my-card::before{ content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% -20%, rgba(255,138,61,0.15) 0%, transparent 60%); pointer-events: none; }
+  .ember-canvas{ display:block; margin: 0 auto 12px; filter: drop-shadow(0 0 15px rgba(255,138,61,0.4)); }
+  .my-card h3{ margin: 0 0 4px; font-size: 20px; font-family: var(--font-display); }
+  .streak-label{ margin: 0 0 16px; font-size: 14px; color: var(--text-muted); }
+  .streak-label span{ color: var(--ember); font-weight: 700; font-size: 16px; }
 
-  .progress-track{ background: var(--bg-2); border-radius: 999px; height: 8px; overflow: hidden; margin-bottom: 8px; }
-  .progress-fill{ height: 100%; width: 0%; background: var(--ember); border-radius: 999px; transition: width 0.3s ease; }
-  .points-label{ margin: 0 0 12px; font-size: 13px; color: var(--text-muted); }
+  .progress-track{ background: rgba(0,0,0,0.3); border-radius: 999px; height: 12px; overflow: hidden; margin-bottom: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+  .progress-fill{ height: 100%; width: 0%; background: linear-gradient(90deg, #FF6B00, var(--ember)); border-radius: 999px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+  .progress-fill::after{ content:''; position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite; }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .points-label{ margin: 0 0 16px; font-size: 14px; color: var(--text-muted); font-weight: 500; }
 
   .activity-select{
     width: 100%; padding: 10px 12px; background: var(--bg-2);
@@ -213,6 +258,52 @@
   .recover-form{ display: none; margin-top: 8px; }
   .recover-form.show{ display: block; }
 
+  /* ---------- chat panel ---------- */
+  .chat-panel {
+    background: var(--bg-2); border: 1px solid var(--surface-border);
+    border-radius: var(--radius); margin-bottom: 18px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .chat-header {
+    padding: 12px 16px; background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--surface-border); display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer;
+  }
+  .chat-header h3 { margin: 0; font-size: 15px; font-family: var(--font-display); }
+  .chat-badge {
+    background: var(--mint); color: #062521; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; display: none;
+  }
+  .chat-badge.show { display: block; }
+  .chat-body { display: none; flex-direction: column; height: 280px; }
+  .chat-panel.open .chat-body { display: flex; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+  .chat-msg { max-width: 85%; display: flex; flex-direction: column; }
+  .chat-msg.me { align-self: flex-end; align-items: flex-end; }
+  .chat-msg.other { align-self: flex-start; align-items: flex-start; }
+  .chat-bubble {
+    padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4;
+    word-break: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .chat-msg.me .chat-bubble { background: linear-gradient(135deg, var(--surface) 0%, #2A1810 100%); border: 1px solid rgba(255,138,61,0.2); border-bottom-right-radius: 4px; }
+  .chat-msg.other .chat-bubble { background: var(--surface); border: 1px solid rgba(255,255,255,0.05); border-bottom-left-radius: 4px; }
+  .chat-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 6px; }
+  
+  .chat-input-area {
+    padding: 12px; border-top: 1px solid var(--surface-border); display: flex; gap: 8px; background: rgba(0,0,0,0.2);
+  }
+  .chat-input-area input {
+    flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--surface-border);
+    border-radius: 20px; font-size: 14px; color: var(--text); outline: none;
+  }
+  .chat-input-area input:focus { border-color: var(--mint); }
+  .chat-input-area button {
+    background: var(--mint); color: #062521; border: none; border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s ease;
+  }
+  .chat-input-area button:active { transform: scale(0.9); }
+  .chat-input-area button:disabled { opacity: 0.5; }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
   }
@@ -308,6 +399,22 @@
             <div class="rc-code" id="rc-code-display">—</div>
           </div>
           <button type="button" class="btn-copy" id="rc-copy-btn">Copy</button>
+        </div>
+
+        <div class="chat-panel" id="chat-panel">
+          <div class="chat-header" id="chat-header">
+            <h3>💬 Room Chat</h3>
+            <div class="chat-badge" id="chat-badge">0</div>
+          </div>
+          <div class="chat-body" id="chat-body">
+            <div class="chat-messages" id="chat-messages">
+              <!-- messages go here -->
+            </div>
+            <div class="chat-input-area">
+              <input type="text" id="chat-input" placeholder="Type a message..." maxlength="500" autocomplete="off" />
+              <button id="chat-send-btn" disabled>➤</button>
+            </div>
+          </div>
         </div>
 
         <div class="setup-actions">
@@ -445,16 +552,90 @@
 
   function apiUrl(path){ return API_BASE + path; }
 
+  async function fetchChatHistory(roomCode){
+    try{
+      var res = await fetch(apiUrl("/api/rooms/" + roomCode + "/messages"));
+      if(!res.ok) return;
+      var messages = await res.json();
+      var container = document.getElementById("chat-messages");
+      container.innerHTML = "";
+      messages.forEach(renderChatMessage);
+      container.scrollTop = container.scrollHeight;
+    } catch(e){ /* ignore */ }
+  }
+
+  function renderChatMessage(msg) {
+    var container = document.getElementById("chat-messages");
+    var isMe = msg.player_id === myPlayerId;
+    
+    var el = document.createElement("div");
+    el.className = "chat-msg " + (isMe ? "me" : "other");
+    
+    var bubble = document.createElement("div");
+    bubble.className = "chat-bubble";
+    bubble.textContent = msg.body;
+    
+    var meta = document.createElement("div");
+    meta.className = "chat-meta";
+    
+    var timeStr = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    if(isMe) {
+      meta.innerHTML = "<span>" + timeStr + "</span> <span>You</span>";
+    } else {
+      meta.innerHTML = "<span>" + msg.sender_name + "</span> <span>" + timeStr + "</span>";
+    }
+    
+    el.appendChild(bubble);
+    el.appendChild(meta);
+    container.appendChild(el);
+    
+    // Auto-scroll if we are near bottom
+    if (container.scrollHeight - container.scrollTop < container.clientHeight + 100) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
+  var unreadChatCount = 0;
+  function updateUnreadBadge() {
+    var badge = document.getElementById("chat-badge");
+    var panel = document.getElementById("chat-panel");
+    if (panel.classList.contains("open")) {
+      unreadChatCount = 0;
+    }
+    if (unreadChatCount > 0) {
+      badge.textContent = unreadChatCount;
+      badge.classList.add("show");
+    } else {
+      badge.classList.remove("show");
+    }
+  }
+
   function connectWs(roomCode){
     if(ws){ try{ ws.close(); }catch(e){ /* already closing */ } }
     var host = isSameOrigin ? location.host : DEFAULT_SERVER_HOST;
     var proto = (isSameOrigin && location.protocol === "https:") ? "wss:" : "ws:";
     ws = new WebSocket(proto + "//" + host + "/ws/" + roomCode);
+    
+    fetchChatHistory(roomCode);
+    
     ws.onmessage = function(evt){
       try{
-        var state = JSON.parse(evt.data);
-        latestState = state;
-        renderDuel();
+        var data = JSON.parse(evt.data);
+        if (data.type === "state") {
+          latestState = data; // the enum unwraps the struct fields cleanly
+          renderDuel();
+        } else if (data.type === "chat") {
+          renderChatMessage(data);
+          var panel = document.getElementById("chat-panel");
+          if (!panel.classList.contains("open")) {
+            unreadChatCount++;
+            updateUnreadBadge();
+          }
+        } else if (data.room) {
+          // Backward compatibility in case we received a raw RoomState somehow
+          latestState = data;
+          renderDuel();
+        }
       }catch(e){ /* ignore malformed frame */ }
     };
     ws.onclose = function(){
@@ -472,8 +653,8 @@
         body: JSON.stringify({})
       });
       if(!res.ok) throw new Error("create failed");
-      var state = await res.json();
-      await joinExistingRoom(state.room.code);
+      var data = await res.json();
+      await joinExistingRoom(data.room.code);
     }catch(e){
       showToast("Could not reach the server. Check you are on the FLAME network.");
     }
@@ -1001,6 +1182,44 @@
     document.getElementById("rulebook-close").addEventListener("click", function(){ rulebookDialog.close(); });
 
     window.addEventListener("resize", resizeParticleCanvas);
+
+    /* ---------- chat ---------- */
+
+    document.getElementById("chat-header").addEventListener("click", function(){
+      var panel = document.getElementById("chat-panel");
+      panel.classList.toggle("open");
+      if (panel.classList.contains("open")) {
+        var container = document.getElementById("chat-messages");
+        container.scrollTop = container.scrollHeight;
+        updateUnreadBadge();
+      }
+    });
+
+    var chatInput = document.getElementById("chat-input");
+    var chatSendBtn = document.getElementById("chat-send-btn");
+    
+    chatInput.addEventListener("input", function(){
+      chatSendBtn.disabled = !this.value.trim();
+    });
+
+    chatInput.addEventListener("keypress", function(e){
+      if (e.key === "Enter" && !chatSendBtn.disabled) {
+        chatSendBtn.click();
+      }
+    });
+
+    chatSendBtn.addEventListener("click", function(){
+      var text = chatInput.value.trim();
+      if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+      var msg = {
+        type: "chat",
+        device_token: getDeviceToken(),
+        message: text
+      };
+      ws.send(JSON.stringify(msg));
+      chatInput.value = "";
+      chatSendBtn.disabled = true;
+    });
 
     /* ---------- feedback ---------- */
 

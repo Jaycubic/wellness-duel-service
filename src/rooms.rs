@@ -307,7 +307,7 @@ pub async fn submit_checkin(
 }
 
 fn broadcast_state(state: &web::Data<AppState>, room_code: &str, fresh_state: &RoomState) {
-    if let Ok(json) = serde_json::to_string(fresh_state) {
+    if let Ok(json) = serde_json::to_string(&WsOutgoing::State(fresh_state)) {
         state.broadcast(room_code, &json);
     }
 }
