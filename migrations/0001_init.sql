@@ -2,7 +2,9 @@
 -- UUIDs are generated application-side (uuid::Uuid::new_v4()), so no
 -- pgcrypto / uuid-ossp extension is required on the server.
 
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE SCHEMA IF NOT EXISTS app;
+
+CREATE TABLE IF NOT EXISTS app.rooms (
     id          UUID PRIMARY KEY,
     code        TEXT NOT NULL UNIQUE,
     max_days    INTEGER NOT NULL DEFAULT 7,
@@ -10,9 +12,9 @@ CREATE TABLE IF NOT EXISTS rooms (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS players (
+CREATE TABLE IF NOT EXISTS app.players (
     id                 UUID PRIMARY KEY,
-    room_id            UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    room_id            UUID NOT NULL REFERENCES app.rooms(id) ON DELETE CASCADE,
     device_token       TEXT NOT NULL,
     name               TEXT NOT NULL,
     streak             INTEGER NOT NULL DEFAULT 0,
@@ -23,9 +25,9 @@ CREATE TABLE IF NOT EXISTS players (
     UNIQUE (room_id, device_token)
 );
 
-CREATE TABLE IF NOT EXISTS checkins (
+CREATE TABLE IF NOT EXISTS app.checkins (
     id            UUID PRIMARY KEY,
-    player_id     UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    player_id     UUID NOT NULL REFERENCES app.players(id) ON DELETE CASCADE,
     day           INTEGER NOT NULL,
     activity_key  TEXT,
     points        INTEGER NOT NULL DEFAULT 0,
@@ -35,5 +37,5 @@ CREATE TABLE IF NOT EXISTS checkins (
     UNIQUE (player_id, day)
 );
 
-CREATE INDEX IF NOT EXISTS idx_players_room ON players(room_id);
-CREATE INDEX IF NOT EXISTS idx_checkins_player ON checkins(player_id);
+CREATE INDEX IF NOT EXISTS idx_players_room ON app.players(room_id);
+CREATE INDEX IF NOT EXISTS idx_checkins_player ON app.checkins(player_id);
