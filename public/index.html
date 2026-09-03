@@ -434,6 +434,26 @@
 
   <canvas id="particle-canvas"></canvas>
 
+  <dialog id="share-dialog">
+    <h2 style="text-align: center; margin-bottom: 4px;">Share Room</h2>
+    <p style="text-align: center;">Invite friends to join your duel!</p>
+    
+    <div style="text-align: center; margin: 20px 0;">
+      <img id="share-qr" src="" alt="QR Code" style="border-radius: 12px; border: 4px solid var(--text);" width="160" height="160" />
+      <div style="font-family: monospace; font-size: 20px; font-weight: bold; margin-top: 12px; letter-spacing: 2px; color: var(--mint);">
+        <span id="share-code-text"></span>
+      </div>
+    </div>
+
+    <div class="setup-actions">
+      <a id="share-wa" href="#" target="_blank" class="btn btn-share" style="text-align:center; text-decoration:none; display:block; background: #25D366; color: #000; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);">Share via WhatsApp</a>
+      <a id="share-email" href="#" class="btn btn-primary" style="text-align:center; text-decoration:none; display:block; background: var(--ember); color: #000;">Share via Email</a>
+      <button type="button" class="btn btn-ghost" id="share-copy-btn">Copy Link</button>
+    </div>
+    
+    <button class="btn btn-ghost" id="share-close" style="margin-top: 8px;">Close</button>
+  </dialog>
+
   <dialog id="rulebook-dialog">
     <h2>Rule Book</h2>
     <p>Step &amp; Share is a live wellness duel. Everyone in a room shares the same real-time board, hosted on a server that keeps score honestly.</p>
@@ -735,24 +755,37 @@
   }
 
   function shareRoomCode(){
-    // Use the main URL as requested
     var url = "http://192.168.8.10:8090/?code=" + currentRoomCode;
     var text = "Join my Wellness Streak Duel! Room Code: " + currentRoomCode;
     
-    if(navigator.share){
+    if(navigator.share && window.isSecureContext){
       navigator.share({ 
         title: "Wellness Streak Duel", 
         text: text,
         url: url
       }).catch(function(err){ 
-        // If user cancelled, just ignore. If failed for other reason, fallback to clipboard.
-        if (err.name !== 'AbortError') {
-          copyToClipboard(text + "\n" + url).then(function(){ showToast("Link copied to clipboard!"); });
-        }
+        if (err.name !== 'AbortError') showCustomShare(url, text);
       });
     } else {
-      copyToClipboard(text + "\n" + url).then(function(){ showToast("Copied! Share it with your friends."); });
+      showCustomShare(url, text);
     }
+  }
+
+  function showCustomShare(url, text) {
+    var dialog = document.getElementById("share-dialog");
+    
+    // Generate a QR code pointing to the URL using a public API
+    var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=0F2A2E&bgcolor=F4FBFA&data=" + encodeURIComponent(url);
+    document.getElementById("share-qr").src = qrUrl;
+    document.getElementById("share-code-text").textContent = currentRoomCode;
+    
+    // Set WhatsApp intent
+    document.getElementById("share-wa").href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text + "\n" + url);
+    
+    // Set Email intent
+    document.getElementById("share-email").href = "mailto:?subject=" + encodeURIComponent("Join my Wellness Duel!") + "&body=" + encodeURIComponent(text + "\n\n" + url);
+    
+    dialog.showModal();
   }
 
   /* ---------- screen management ---------- */
@@ -1186,6 +1219,17 @@
 
     document.getElementById("share-room-btn").addEventListener("click", shareRoomCode);
     document.getElementById("leave-room-btn").addEventListener("click", leaveRoom);
+
+    var shareDialog = document.getElementById("share-dialog");
+    document.getElementById("share-close").addEventListener("click", function(){ shareDialog.close(); });
+    document.getElementById("share-copy-btn").addEventListener("click", function(){
+      var url = "http://192.168.8.10:8090/?code=" + currentRoomCode;
+      var text = "Join my Wellness Streak Duel! Room Code: " + currentRoomCode;
+      copyToClipboard(text + "\n" + url).then(function(){
+        showToast("Copied to clipboard!");
+        shareDialog.close();
+      });
+    });
 
     var rulebookDialog = document.getElementById("rulebook-dialog");
     document.getElementById("rulebook-open-1").addEventListener("click", function(){ rulebookDialog.showModal(); });
