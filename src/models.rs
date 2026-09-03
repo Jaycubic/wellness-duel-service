@@ -96,3 +96,30 @@ pub struct JoinResp {
     pub player_id: Uuid,
     pub state: RoomState,
 }
+
+// ---------- Feedback ----------
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct FeedbackRow {
+    pub id: Uuid,
+    pub name: String,
+    pub rating: i32,
+    pub message: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FeedbackView {
+    pub id: Uuid,
+    pub name: String,
+    pub rating: i32,
+    pub message: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubmitFeedbackReq {
+    pub name: String,
+    pub rating: i32,
+    pub message: String,
+}

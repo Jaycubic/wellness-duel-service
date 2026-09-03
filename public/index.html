@@ -137,6 +137,55 @@
   }
   #toast.show{ opacity: 1; transform: translate(-50%, 0); }
 
+  /* ---------- feedback ---------- */
+
+  .feedback-open-btn{
+    display: block; width: 100%; margin-top: 14px;
+    background: transparent; border: 1px solid var(--surface-border);
+    color: var(--mint-soft); border-radius: 14px; padding: 11px 16px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .feedback-open-btn:hover{ background: var(--surface); border-color: var(--mint); }
+
+  #feedback-dialog{ max-width: 520px; }
+  #feedback-dialog h2{ margin-bottom: 4px; }
+  .fb-subtitle{ color: var(--text-muted); font-size: 13px; margin: 0 0 18px; }
+
+  .fb-avg{ text-align:center; margin-bottom: 16px; padding: 12px; background: var(--bg-2); border-radius: 14px; }
+  .fb-avg .stars-display{ font-size: 22px; letter-spacing: 2px; }
+  .fb-avg .avg-label{ font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .fb-form{ margin-bottom: 20px; }
+  .fb-form .field input,
+  .fb-form .field textarea{
+    width: 100%; padding: 10px 12px; background: var(--bg-2);
+    border: 1px solid var(--surface-border); border-radius: 12px;
+    font-size: 14px; color: var(--text); font-family: inherit; resize: vertical;
+  }
+  .fb-form .field textarea{ min-height: 70px; }
+
+  .star-input{ display: flex; gap: 4px; margin-bottom: 14px; }
+  .star-input .star{
+    font-size: 28px; cursor: pointer; transition: transform 0.1s ease;
+    background: none; border: none; padding: 0; line-height: 1;
+  }
+  .star-input .star:hover{ transform: scale(1.2); }
+  .star-input .star.active{ filter: none; }
+  .star-input .star.inactive{ filter: grayscale(1) opacity(0.35); }
+
+  .fb-feed{ max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .fb-card{
+    background: var(--bg-2); border: 1px solid var(--surface-border);
+    border-radius: 14px; padding: 14px 16px;
+  }
+  .fb-card-header{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .fb-card-name{ font-weight: 600; font-size: 14px; }
+  .fb-card-time{ font-size: 12px; color: var(--text-muted); }
+  .fb-card-stars{ font-size: 14px; letter-spacing: 1px; margin-bottom: 4px; }
+  .fb-card-msg{ font-size: 14px; color: var(--text-muted); line-height: 1.45; word-wrap: break-word; }
+  .fb-empty{ text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px 0; }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
   }
@@ -169,6 +218,7 @@
           <div class="setup-links">
             <button type="button" class="link-btn" id="rulebook-open-1">How to play</button>
           </div>
+          <button type="button" class="feedback-open-btn" id="feedback-open-1">💬 Feedback</button>
         </div>
       </section>
 
@@ -217,6 +267,8 @@
           <button type="button" class="link-btn" id="rulebook-open-2">How to play</button>
           &nbsp;·&nbsp;
           <button type="button" class="link-btn" id="leave-room-btn">Leave room</button>
+          &nbsp;·&nbsp;
+          <button type="button" class="link-btn" id="feedback-open-2">💬 Feedback</button>
         </div>
       </section>
     </main>
@@ -250,6 +302,40 @@
     <p>Everyone races toward the same target on the same live board — a real duel, not a snapshot.</p>
 
     <button class="btn btn-ghost" id="rulebook-close">Close</button>
+  </dialog>
+
+  <dialog id="feedback-dialog">
+    <h2>💬 Feedback</h2>
+    <p class="fb-subtitle">Share your thoughts — visible to everyone</p>
+
+    <div class="fb-avg" id="fb-avg-section" hidden>
+      <div class="stars-display" id="fb-avg-stars"></div>
+      <div class="avg-label" id="fb-avg-label"></div>
+    </div>
+
+    <div class="fb-form">
+      <div class="field">
+        <label for="fb-name">Your name</label>
+        <input id="fb-name" type="text" maxlength="50" placeholder="e.g. Arjun" autocomplete="off" />
+      </div>
+      <label style="font-size:13px;color:var(--text-muted);margin-bottom:6px;display:block;">Rating</label>
+      <div class="star-input" id="fb-star-input">
+        <button type="button" class="star active" data-value="1">⭐</button>
+        <button type="button" class="star active" data-value="2">⭐</button>
+        <button type="button" class="star active" data-value="3">⭐</button>
+        <button type="button" class="star inactive" data-value="4">⭐</button>
+        <button type="button" class="star inactive" data-value="5">⭐</button>
+      </div>
+      <div class="field">
+        <label for="fb-message">Your feedback</label>
+        <textarea id="fb-message" maxlength="1000" placeholder="What did you think of the game?"></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" id="fb-submit-btn">Submit feedback</button>
+    </div>
+
+    <div class="fb-feed" id="fb-feed"></div>
+
+    <button class="btn btn-ghost" id="feedback-close">Close</button>
   </dialog>
 
   <div id="toast" role="status" aria-live="polite"></div>
@@ -859,6 +945,143 @@
     document.getElementById("rulebook-close").addEventListener("click", function(){ rulebookDialog.close(); });
 
     window.addEventListener("resize", resizeParticleCanvas);
+
+    /* ---------- feedback ---------- */
+
+    var feedbackDialog = document.getElementById("feedback-dialog");
+    document.getElementById("feedback-open-1").addEventListener("click", openFeedbackDialog);
+    document.getElementById("feedback-open-2").addEventListener("click", openFeedbackDialog);
+    document.getElementById("feedback-close").addEventListener("click", function(){ feedbackDialog.close(); });
+    document.getElementById("fb-submit-btn").addEventListener("click", submitFeedback);
+
+    var starButtons = document.querySelectorAll("#fb-star-input .star");
+    starButtons.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        selectedRating = parseInt(this.getAttribute("data-value"));
+        updateStarDisplay();
+      });
+    });
+  }
+
+  /* ---------- feedback logic ---------- */
+
+  var selectedRating = 3;
+
+  function updateStarDisplay(){
+    var starButtons = document.querySelectorAll("#fb-star-input .star");
+    starButtons.forEach(function(btn){
+      var val = parseInt(btn.getAttribute("data-value"));
+      if(val <= selectedRating){
+        btn.classList.add("active"); btn.classList.remove("inactive");
+      } else {
+        btn.classList.remove("active"); btn.classList.add("inactive");
+      }
+    });
+  }
+
+  function openFeedbackDialog(){
+    var nameInput = document.getElementById("fb-name");
+    var savedName = document.getElementById("name-input").value.trim() || localStorage.getItem("wsd_last_name") || "";
+    if(!nameInput.value.trim() && savedName) nameInput.value = savedName;
+    selectedRating = 3;
+    updateStarDisplay();
+    document.getElementById("fb-message").value = "";
+    loadFeedback();
+    document.getElementById("feedback-dialog").showModal();
+  }
+
+  async function submitFeedback(){
+    var name = document.getElementById("fb-name").value.trim();
+    var message = document.getElementById("fb-message").value.trim();
+    if(!name){ showToast("Please enter your name."); return; }
+    if(!message){ showToast("Please write some feedback."); return; }
+
+    var btn = document.getElementById("fb-submit-btn");
+    btn.disabled = true;
+    try{
+      var res = await fetch(apiUrl("/api/feedback"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, rating: selectedRating, message: message })
+      });
+      if(!res.ok){
+        var err = await res.json().catch(function(){ return { error: "Something went wrong." }; });
+        showToast(err.error || "Could not submit feedback.");
+        return;
+      }
+      showToast("Thank you for your feedback!");
+      document.getElementById("fb-message").value = "";
+      selectedRating = 3;
+      updateStarDisplay();
+      loadFeedback();
+    } catch(e){
+      showToast("Could not reach the server.");
+    } finally{
+      btn.disabled = false;
+    }
+  }
+
+  async function loadFeedback(){
+    var feed = document.getElementById("fb-feed");
+    var avgSection = document.getElementById("fb-avg-section");
+    try{
+      var res = await fetch(apiUrl("/api/feedback"));
+      if(!res.ok) return;
+      var items = await res.json();
+
+      if(items.length === 0){
+        feed.innerHTML = '<div class="fb-empty">No feedback yet — be the first!</div>';
+        avgSection.hidden = true;
+        return;
+      }
+
+      // Average rating
+      var sum = 0;
+      for(var i = 0; i < items.length; i++) sum += items[i].rating;
+      var avg = sum / items.length;
+      document.getElementById("fb-avg-stars").textContent = renderStarsText(Math.round(avg));
+      document.getElementById("fb-avg-label").textContent = avg.toFixed(1) + " average · " + items.length + " review" + (items.length === 1 ? "" : "s");
+      avgSection.hidden = false;
+
+      // Feed cards
+      var html = "";
+      for(var j = 0; j < items.length; j++){
+        var fb = items[j];
+        html += '<div class="fb-card">';
+        html += '<div class="fb-card-header">';
+        html += '<span class="fb-card-name">' + escapeHtml(fb.name) + '</span>';
+        html += '<span class="fb-card-time">' + timeAgo(fb.created_at) + '</span>';
+        html += '</div>';
+        html += '<div class="fb-card-stars">' + renderStarsText(fb.rating) + '</div>';
+        html += '<div class="fb-card-msg">' + escapeHtml(fb.message) + '</div>';
+        html += '</div>';
+      }
+      feed.innerHTML = html;
+    } catch(e){
+      feed.innerHTML = '<div class="fb-empty">Could not load feedback.</div>';
+    }
+  }
+
+  function renderStarsText(n){
+    var s = "";
+    for(var i = 1; i <= 5; i++) s += (i <= n ? "⭐" : "☆");
+    return s;
+  }
+
+  function escapeHtml(str){
+    var d = document.createElement("div"); d.textContent = str; return d.innerHTML;
+  }
+
+  function timeAgo(isoStr){
+    var seconds = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if(seconds < 60) return "just now";
+    var minutes = Math.floor(seconds / 60);
+    if(minutes < 60) return minutes + "m ago";
+    var hours = Math.floor(minutes / 60);
+    if(hours < 24) return hours + "h ago";
+    var days = Math.floor(hours / 24);
+    if(days < 30) return days + "d ago";
+    return new Date(isoStr).toLocaleDateString();
   }
 
   function init(){

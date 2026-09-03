@@ -1,6 +1,7 @@
 mod activities;
 mod db;
 mod error;
+mod feedback;
 mod models;
 mod rooms;
 mod state;
@@ -54,6 +55,8 @@ async fn main() -> anyhow::Result<()> {
             .route("/api/rooms/{code}/join", web::post().to(rooms::join_room))
             .route("/api/rooms/{code}/state", web::get().to(rooms::get_state))
             .route("/api/rooms/{code}/checkin", web::post().to(rooms::submit_checkin))
+            .route("/api/feedback", web::get().to(feedback::list_feedback))
+            .route("/api/feedback", web::post().to(feedback::submit_feedback))
             .route("/ws/{code}", web::get().to(ws::ws_route))
             .service(Files::new("/uploads", &uploads_dir))
             // Serves the game itself (public/index.html) from the same
