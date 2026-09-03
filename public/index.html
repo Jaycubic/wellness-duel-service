@@ -186,6 +186,33 @@
   .fb-card-msg{ font-size: 14px; color: var(--text-muted); line-height: 1.45; word-wrap: break-word; }
   .fb-empty{ text-align: center; color: var(--text-muted); font-size: 14px; padding: 20px 0; }
 
+  /* ---------- session resume + recovery ---------- */
+
+  .resume-banner{
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(111,214,196,0.12) 100%);
+    border: 1px solid var(--mint); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 16px; text-align: center;
+  }
+  .resume-banner p{ margin: 0 0 10px; font-size: 14px; color: var(--text-muted); }
+  .resume-banner strong{ color: var(--mint-soft); }
+  .resume-banner .btn{ margin-bottom: 6px; }
+  .resume-dismiss{ background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline; }
+
+  .recovery-row{
+    background: var(--bg-2); border: 1px solid var(--surface-border);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .recovery-row .rc-label{ font-size: 12px; color: var(--text-muted); }
+  .recovery-row .rc-code{ font-family: monospace; font-size: 15px; color: var(--ember-soft); letter-spacing: 1.5px; font-weight: 700; }
+  .recovery-row .btn-copy{ background: none; border: 1px solid var(--surface-border); color: var(--text-muted); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .recovery-row .btn-copy:hover{ border-color: var(--mint); color: var(--mint); }
+
+  .recover-section{ margin-top: 12px; }
+  .recover-toggle{ background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; text-decoration: underline; }
+  .recover-form{ display: none; margin-top: 8px; }
+  .recover-form.show{ display: block; }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
   }
@@ -201,6 +228,12 @@
 
     <main>
       <section id="screen-setup" class="screen">
+        <div id="resume-banner" class="resume-banner" hidden>
+          <p>Continue as <strong id="resume-name">—</strong> in room <strong id="resume-code">—</strong></p>
+          <button type="button" class="btn btn-primary" id="resume-btn">Continue</button>
+          <br/>
+          <button type="button" class="resume-dismiss" id="resume-dismiss">Start fresh instead</button>
+        </div>
         <div class="card">
           <div class="field">
             <label for="name-input">Your name</label>
@@ -217,6 +250,16 @@
           <button type="button" class="btn btn-share" id="join-room-btn">Join room</button>
           <div class="setup-links">
             <button type="button" class="link-btn" id="rulebook-open-1">How to play</button>
+          </div>
+          <div class="recover-section">
+            <button type="button" class="recover-toggle" id="recover-toggle">Recover with personal code</button>
+            <div class="recover-form" id="recover-form">
+              <div class="field">
+                <label for="recover-code-input">Your recovery code</label>
+                <input id="recover-code-input" type="text" maxlength="8" placeholder="e.g. ab3xz9mn" style="text-transform:lowercase" autocomplete="off" />
+              </div>
+              <button type="button" class="btn btn-ghost" id="recover-btn">Recover my session</button>
+            </div>
           </div>
           <button type="button" class="feedback-open-btn" id="feedback-open-1">💬 Feedback</button>
         </div>
@@ -257,6 +300,14 @@
             <button class="btn btn-primary" id="done-btn-me" disabled>Mark done</button>
             <button class="btn btn-ghost" id="skip-btn-me">Skip today</button>
           </div>
+        </div>
+
+        <div id="recovery-code-row" class="recovery-row" hidden>
+          <div>
+            <div class="rc-label">Your personal recovery code</div>
+            <div class="rc-code" id="rc-code-display">—</div>
+          </div>
+          <button type="button" class="btn-copy" id="rc-copy-btn">Copy</button>
         </div>
 
         <div class="setup-actions">
@@ -449,10 +500,13 @@
       currentRoomCode = code;
       latestState = data.state;
       celebratedFor = null;
+      myRecoveryCode = data.recovery_code || "";
 
       localStorage.setItem("wsd_last_name", name);
+      saveSession();
 
       document.getElementById("room-code-display").textContent = currentRoomCode;
+      showRecoveryCode();
       connectWs(currentRoomCode);
       setScreen("duel");
       renderDuel();
@@ -494,6 +548,8 @@
     currentRoomCode = null;
     myPlayerId = null;
     latestState = null;
+    myRecoveryCode = "";
+    clearSession();
     setScreen("setup");
   }
 
@@ -1084,11 +1140,116 @@
     return new Date(isoStr).toLocaleDateString();
   }
 
+  /* ---------- session persistence (Option A) + recovery (Option B) ---------- */
+
+  var myRecoveryCode = "";
+
+  function saveSession(){
+    if(!currentRoomCode || !myPlayerId) return;
+    var session = {
+      roomCode: currentRoomCode,
+      playerId: myPlayerId,
+      playerName: localStorage.getItem("wsd_last_name") || "Player",
+      recoveryCode: myRecoveryCode
+    };
+    localStorage.setItem("wsd_session", JSON.stringify(session));
+  }
+
+  function clearSession(){
+    localStorage.removeItem("wsd_session");
+  }
+
+  function getSavedSession(){
+    try{
+      var raw = localStorage.getItem("wsd_session");
+      if(!raw) return null;
+      var s = JSON.parse(raw);
+      if(s.roomCode && s.playerId) return s;
+    } catch(e){ /* corrupted */ }
+    return null;
+  }
+
+  function showResumeBanner(){
+    var session = getSavedSession();
+    var banner = document.getElementById("resume-banner");
+    if(!session){ banner.hidden = true; return; }
+    document.getElementById("resume-name").textContent = session.playerName;
+    document.getElementById("resume-code").textContent = session.roomCode;
+    banner.hidden = false;
+  }
+
+  function showRecoveryCode(){
+    var row = document.getElementById("recovery-code-row");
+    if(myRecoveryCode){
+      document.getElementById("rc-code-display").textContent = myRecoveryCode;
+      row.hidden = false;
+    } else {
+      row.hidden = true;
+    }
+  }
+
+  async function recoverWithCode(){
+    var code = document.getElementById("recover-code-input").value.trim().toLowerCase();
+    if(!code){ showToast("Enter your recovery code."); return; }
+
+    try{
+      var res = await fetch(apiUrl("/api/recover"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recovery_code: code })
+      });
+      if(!res.ok){
+        var err = await res.json().catch(function(){ return { error: "Invalid recovery code." }; });
+        showToast(err.error || "Invalid recovery code.");
+        return;
+      }
+      var data = await res.json();
+      myPlayerId = data.player_id;
+      currentRoomCode = data.room_code;
+      latestState = data.state;
+      celebratedFor = null;
+      myRecoveryCode = data.recovery_code || "";
+
+      saveSession();
+
+      document.getElementById("room-code-display").textContent = currentRoomCode;
+      showRecoveryCode();
+      connectWs(currentRoomCode);
+      setScreen("duel");
+      renderDuel();
+      showToast("Welcome back! Session recovered.");
+    } catch(e){
+      showToast("Could not reach the server.");
+    }
+  }
+
   function init(){
     emberCtxMe = setupEmberCanvas(document.getElementById("ember-me"));
     resizeParticleCanvas();
     buildActivityOptions(document.getElementById("activity-select-me"));
     bindEvents();
+
+    // Resume banner (Option A)
+    document.getElementById("resume-btn").addEventListener("click", function(){
+      var session = getSavedSession();
+      if(session){
+        document.getElementById("name-input").value = session.playerName;
+        joinExistingRoom(session.roomCode);
+      }
+    });
+    document.getElementById("resume-dismiss").addEventListener("click", function(){
+      clearSession();
+      document.getElementById("resume-banner").hidden = true;
+    });
+
+    // Recovery code (Option B)
+    document.getElementById("recover-toggle").addEventListener("click", function(){
+      document.getElementById("recover-form").classList.toggle("show");
+    });
+    document.getElementById("recover-btn").addEventListener("click", recoverWithCode);
+    document.getElementById("rc-copy-btn").addEventListener("click", function(){
+      copyToClipboard(myRecoveryCode).then(function(){ showToast("Recovery code copied!"); });
+    });
 
     var params = new URLSearchParams(location.search);
     var codeFromUrl = params.get("code");
@@ -1097,6 +1258,7 @@
     var lastName = localStorage.getItem("wsd_last_name");
     if(lastName) document.getElementById("name-input").value = lastName;
 
+    showResumeBanner();
     setScreen("setup");
     requestAnimationFrame(tick);
   }

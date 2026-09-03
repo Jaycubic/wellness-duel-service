@@ -57,6 +57,7 @@ async fn main() -> anyhow::Result<()> {
             .route("/api/rooms/{code}/checkin", web::post().to(rooms::submit_checkin))
             .route("/api/feedback", web::get().to(feedback::list_feedback))
             .route("/api/feedback", web::post().to(feedback::submit_feedback))
+            .route("/api/recover", web::post().to(rooms::recover_player))
             .route("/ws/{code}", web::get().to(ws::ws_route))
             .service(Files::new("/uploads", &uploads_dir))
             // Serves the game itself (public/index.html) from the same

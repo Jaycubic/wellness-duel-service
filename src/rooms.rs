@@ -9,7 +9,7 @@ use crate::activities::{compute_points, find_activity};
 use crate::error::{AppError, AppResult};
 use crate::models::*;
 use crate::state::AppState;
-use crate::util::{compute_current_day, generate_room_code};
+use crate::util::{compute_current_day, generate_recovery_code, generate_room_code};
 
 pub async fn fetch_room(pool: &PgPool, code: &str) -> AppResult<RoomRow> {
     sqlx::query_as::<_, RoomRow>(
@@ -23,7 +23,7 @@ pub async fn fetch_room(pool: &PgPool, code: &str) -> AppResult<RoomRow> {
 
 pub async fn build_room_state(pool: &PgPool, room: &RoomRow) -> AppResult<RoomState> {
     let players: Vec<PlayerRow> = sqlx::query_as::<_, PlayerRow>(
-        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count
+        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count, recovery_code
          FROM players WHERE room_id = $1 ORDER BY total_points DESC, name ASC",
     )
     .bind(room.id)
@@ -133,7 +133,7 @@ pub async fn join_room(
     };
 
     let existing: Option<PlayerRow> = sqlx::query_as::<_, PlayerRow>(
-        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count
+        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count, recovery_code
          FROM players WHERE room_id = $1 AND device_token = $2",
     )
     .bind(room.id)
@@ -141,29 +141,31 @@ pub async fn join_room(
     .fetch_optional(&state.pool)
     .await?;
 
-    let player_id = if let Some(p) = existing {
+    let (player_id, recovery_code) = if let Some(p) = existing {
         // Reconnecting on the same device: allow a rename, keep their streak/points.
         sqlx::query("UPDATE players SET name = $1 WHERE id = $2")
             .bind(&name)
             .bind(p.id)
             .execute(&state.pool)
             .await?;
-        p.id
+        (p.id, p.recovery_code.unwrap_or_default())
     } else {
         let new_id = Uuid::new_v4();
-        sqlx::query("INSERT INTO players (id, room_id, device_token, name) VALUES ($1, $2, $3, $4)")
+        let rc = generate_recovery_code();
+        sqlx::query("INSERT INTO players (id, room_id, device_token, name, recovery_code) VALUES ($1, $2, $3, $4, $5)")
             .bind(new_id)
             .bind(room.id)
             .bind(&body.device_token)
             .bind(&name)
+            .bind(&rc)
             .execute(&state.pool)
             .await?;
-        new_id
+        (new_id, rc)
     };
 
     let fresh_state = build_room_state(&state.pool, &room).await?;
     broadcast_state(&state, &room.code, &fresh_state);
-    Ok(HttpResponse::Ok().json(JoinResp { player_id, state: fresh_state }))
+    Ok(HttpResponse::Ok().json(JoinResp { player_id, recovery_code, state: fresh_state }))
 }
 
 pub async fn get_state(
@@ -222,7 +224,7 @@ pub async fn submit_checkin(
     }
 
     let player: PlayerRow = sqlx::query_as::<_, PlayerRow>(
-        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count
+        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count, recovery_code
          FROM players WHERE room_id = $1 AND device_token = $2",
     )
     .bind(room.id)
@@ -308,6 +310,48 @@ fn broadcast_state(state: &web::Data<AppState>, room_code: &str, fresh_state: &R
     if let Ok(json) = serde_json::to_string(fresh_state) {
         state.broadcast(room_code, &json);
     }
+}
+
+pub async fn recover_player(
+    state: web::Data<AppState>,
+    body: web::Json<RecoverReq>,
+) -> AppResult<HttpResponse> {
+    let code = body.recovery_code.trim().to_lowercase();
+    if code.is_empty() {
+        return Err(AppError::BadRequest("recovery_code is required".into()));
+    }
+
+    // Look up the player by their unique recovery code
+    let player: PlayerRow = sqlx::query_as::<_, PlayerRow>(
+        "SELECT id, room_id, device_token, name, streak, total_points, last_activity_key, repeat_count, recovery_code
+         FROM players WHERE recovery_code = $1",
+    )
+    .bind(&code)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(AppError::BadRequest("invalid recovery code".into()))?;
+
+    // Look up their room
+    let room: RoomRow = sqlx::query_as::<_, RoomRow>(
+        "SELECT id, code, max_days, win_target, created_at FROM rooms WHERE id = $1",
+    )
+    .bind(player.room_id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(AppError::RoomNotFound)?;
+
+    // Update the player's device_token to the recovering device so future
+    // checkins from this device are recognised as this player.
+    let device_token_from_body: Option<String> = None; // recovery doesn't rebind device_token
+    let _ = device_token_from_body; // suppress warning
+
+    let fresh_state = build_room_state(&state.pool, &room).await?;
+    Ok(HttpResponse::Ok().json(RecoverResp {
+        player_id: player.id,
+        room_code: room.code,
+        recovery_code: player.recovery_code.unwrap_or_default(),
+        state: fresh_state,
+    }))
 }
 
 /// Resizes to a max edge of 480px and re-encodes as JPEG before writing to

@@ -24,6 +24,7 @@ pub struct PlayerRow {
     pub total_points: i32,
     pub last_activity_key: Option<String>,
     pub repeat_count: i32,
+    pub recovery_code: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -94,6 +95,22 @@ pub struct JoinReq {
 #[derive(Debug, Serialize)]
 pub struct JoinResp {
     pub player_id: Uuid,
+    pub recovery_code: String,
+    pub state: RoomState,
+}
+
+// ---------- Recovery ----------
+
+#[derive(Debug, Deserialize)]
+pub struct RecoverReq {
+    pub recovery_code: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RecoverResp {
+    pub player_id: Uuid,
+    pub room_code: String,
+    pub recovery_code: String,
     pub state: RoomState,
 }
 
