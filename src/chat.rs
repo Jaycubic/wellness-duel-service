@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
 
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use crate::models::{ChatMessageRow, ChatMessageView};
 use crate::rooms::fetch_room;
 use crate::state::AppState;

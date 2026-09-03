@@ -143,6 +143,7 @@ pub struct SubmitFeedbackReq {
 
 // ---------- Chat / WebSocket ----------
 
+#[allow(dead_code)]
 #[derive(Debug, sqlx::FromRow)]
 pub struct ChatMessageRow {
     pub id: Uuid,
