@@ -4,12 +4,12 @@ After=network.target postgresql.service
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/wellness-duel-service
-EnvironmentFile=/opt/wellness-duel-service/.env
-ExecStart=/opt/wellness-duel-service/target/release/wellness-duel-service
+WorkingDirectory=/opt/View/wellness-duel-service
+EnvironmentFile=/opt/View/wellness-duel-service/.env
+ExecStart=/opt/View/wellness-duel-service/target/release/wellness-duel-service
 Restart=on-failure
 RestartSec=3
-User=www-data
+User=jofrey
 
 [Install]
 WantedBy=multi-user.target
