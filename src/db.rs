@@ -1,4 +1,4 @@
-use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgPool, PgPoolOptions};
 use std::env;
 
 pub async fn create_pool() -> Result<PgPool, sqlx::Error> {
@@ -11,15 +11,19 @@ pub async fn create_pool() -> Result<PgPool, sqlx::Error> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(5432);
 
-    let url = format!(
-        "postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    );
+    let connect_options = PgConnectOptions::new()
+        .host(&db_host)
+        .port(db_port)
+        .username(&db_user)
+        .password(&db_password)
+        .database(&db_name)
+        .options([("search_path", "app, public")]);
 
     PgPoolOptions::new()
         .max_connections(10)
         .acquire_timeout(std::time::Duration::from_secs(10))
         .idle_timeout(std::time::Duration::from_secs(60))
-        .connect(&url)
+        .connect_with(connect_options)
         .await
 }
 

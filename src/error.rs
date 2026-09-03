@@ -53,7 +53,12 @@ impl ResponseError for AppError {
         // Log the real cause server-side, but never leak internal details
         // (DB errors, file paths, etc.) to the client.
         if self.status_code() == StatusCode::INTERNAL_SERVER_ERROR {
-            tracing::error!(error = %self, "internal error");
+            match self {
+                AppError::Database(e) => tracing::error!(error = %e, "internal database error"),
+                AppError::Io(e) => tracing::error!(error = %e, "internal io error"),
+                AppError::Image(e) => tracing::error!(error = %e, "internal image error"),
+                _ => tracing::error!(error = %self, "internal error"),
+            }
         }
         HttpResponse::build(self.status_code()).json(json!({ "error": self.to_string() }))
     }
