@@ -16,13 +16,20 @@ pub async fn create_pool() -> Result<PgPool, sqlx::Error> {
         .port(db_port)
         .username(&db_user)
         .password(&db_password)
-        .database(&db_name)
-        .options([("search_path", "app, public")]);
+        .database(&db_name);
 
     PgPoolOptions::new()
         .max_connections(10)
         .acquire_timeout(std::time::Duration::from_secs(10))
         .idle_timeout(std::time::Duration::from_secs(60))
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                sqlx::query("SET search_path TO app, public")
+                    .execute(conn)
+                    .await?;
+                Ok(())
+            })
+        })
         .connect_with(connect_options)
         .await
 }
